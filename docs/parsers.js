@@ -400,7 +400,8 @@
     balance: /^(balance|running balance|saldo|balans)(\s*\(.*\))?$/i,
     amount: /^(amount|transaction amount|bedrag)(\s*\(.*\))?$/i,
     date: /^(date|transaction date|posting date|datum|trans date|value date)$/i,
-    desc: /^(description|details|transaction details|narrative|particulars|beskrywing|transaction)$/i
+    desc: /^(description|details|transaction details|narrative|particulars|beskrywing|transaction)$/i,
+    type: /^(type|trans(?:action)? type|code)$/i
   };
 
   async function pdfToLines(data, getPassword) {
@@ -417,9 +418,15 @@
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const tc = await page.getTextContent();
-      const items = tc.items.filter((it) => it.str && it.str.trim()).map((it) => ({
+      let items = tc.items.filter((it) => it.str && it.str.trim()).map((it) => ({
         str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0, h: Math.abs(it.transform[3]) || it.height || 8
       }));
+      // Some banks (e.g. Lloyds) embed invisible screen-reader text: zero-width "." after each
+      // cell and hidden column labels like "Money In (£)" / "blank." above every value.
+      // Drop (near) zero-width text whenever the page also has normal, visible text.
+      // Visible text is several points wide per character; hidden text is ~0.
+      const visible = (it) => it.w / Math.max(1, it.str.length) > 0.5;
+      if (items.some(visible)) items = items.filter(visible);
       // group by y
       items.sort((a, b) => b.y - a.y || a.x - b.x);
       const lines = [];
@@ -523,7 +530,11 @@
         const toks = l.toks;
         const dateTok = toks.find((t) => t.kind === 'date' && toks.indexOf(t) <= 1);
         const amts = toks.filter((t) => t.kind === 'amt').map((t) => Object.assign({}, t, parseAmount(t.text, true))).filter((a) => a.abs !== undefined);
-        const text = toks.filter((t) => t.kind === 'text').map((t) => t.text).join(' ');
+        // A separate "Type" column (e.g. Lloyds: DEB, TFR, FPO, INT) is not part of the description.
+        const isTypeCell = (t) => cols && cols.type !== undefined && t.kind === 'text' && t.text.length <= 6 &&
+          Math.abs(t.x0 - (cols.type - (cols.typeR - cols.type))) < 12;
+        const typeTok = toks.find(isTypeCell);
+        const text = toks.filter((t) => t.kind === 'text' && !isTypeCell(t)).map((t) => t.text).join(' ');
         const joined = l.cells.map((c) => c.text).join(' ');
 
         if (OPEN_RE.test(joined)) {
@@ -567,6 +578,7 @@
           if (dd !== dc) a.colSign = dd < dc ? -1 : 1;
         }
         const t = { date, desc: text, abs: a.abs, sign, colSign: a.colSign, balance: bal ? bal.value : undefined };
+        if (typeTok && /^int/i.test(typeTok.text)) t.hint = 'interest';
         list.push(t);
         lastTxn = t; contCount = 0;
       }

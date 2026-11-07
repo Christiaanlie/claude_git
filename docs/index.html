@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tax Statements</title>
+  <meta name="description" content="Drop your 12 bank statements for the tax year and see money received, money spent and interest, all on your phone.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tax Statements">
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="ty">
+      <button class="icon-btn" id="tyPrev" aria-label="Previous tax year">‹</button>
+      <div class="ty-label">
+        <div class="ty-title" id="tyTitle">Tax year</div>
+        <div class="ty-range" id="tyRange"></div>
+      </div>
+      <button class="icon-btn" id="tyNext" aria-label="Next tax year">›</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Statements -->
+    <section class="view" id="view-statements">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" multiple accept=".pdf,.csv,.ofx,.qfx,.qif,.txt,application/pdf,text/csv,text/plain">
+        <div class="dz-icon">⬇︎</div>
+        <div class="dz-title">Add bank statements</div>
+        <div class="dz-sub">Tap to choose PDF, CSV, OFX or QIF files.<br>You can select all 12 at once.</div>
+      </label>
+      <div class="progress hidden" id="progress"></div>
+
+      <h2 class="section-h">Months covered <span class="muted" id="coverCount"></span></h2>
+      <div class="months" id="months"></div>
+
+      <h2 class="section-h">Imported files</h2>
+      <div class="card list" id="files"></div>
+      <p class="privacy">🔒 Your statements are read on this iPhone only. Nothing is uploaded anywhere.</p>
+    </section>
+
+    <!-- Summary -->
+    <section class="view hidden" id="view-summary">
+      <div class="review-banner hidden" id="reviewBanner"></div>
+      <div class="tiles">
+        <div class="tile in"><div class="tile-k">Money received</div><div class="tile-v" id="sumIn">0</div><div class="tile-n" id="sumInN"></div></div>
+        <div class="tile out"><div class="tile-k">Money spent</div><div class="tile-v" id="sumOut">0</div><div class="tile-n" id="sumOutN"></div></div>
+      </div>
+      <div class="card net"><span>Net (received − spent)</span><strong id="sumNet">0</strong></div>
+
+      <h2 class="section-h">Interest</h2>
+      <div class="card list">
+        <div class="row" data-goto="interestEarned"><div><div class="row-t">Interest earned</div><div class="row-s">Interest the bank credited to you</div></div><div class="row-a pos" id="intEarned">0</div></div>
+        <div class="row" data-goto="interestPaidOut"><div><div class="row-t">Interest paid out</div><div class="row-s">Interest moved out of this account to you</div></div><div class="row-a" id="intPaidOut">0</div></div>
+        <div class="row" data-goto="interestCharged"><div><div class="row-t">Interest charged</div><div class="row-s">Interest you paid the bank (overdraft, loan)</div></div><div class="row-a neg" id="intCharged">0</div></div>
+      </div>
+      <div class="interest-note" id="intNote"></div>
+
+      <h2 class="section-h">By month</h2>
+      <div class="card table-wrap">
+        <table class="mtable">
+          <thead><tr><th>Month</th><th>Received</th><th>Spent</th><th>Interest</th></tr></thead>
+          <tbody id="monthRows"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="exportSummary">Export summary (CSV)</button>
+        <button class="btn secondary" id="exportTxns">Export transactions (CSV)</button>
+      </div>
+    </section>
+
+    <!-- Transactions -->
+    <section class="view hidden" id="view-txns">
+      <input class="search" id="search" type="search" placeholder="Search descriptions" autocomplete="off">
+      <div class="chips" id="chips"></div>
+      <p class="hint">Tap a transaction to change its category.</p>
+      <div id="txnList"></div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view hidden" id="view-settings">
+      <h2 class="section-h">Tax year</h2>
+      <div class="card form">
+        <label class="field"><span>Tax year starts</span>
+          <select id="tyPreset">
+            <option value="2-1">1 March (South Africa)</option>
+            <option value="3-6">6 April (United Kingdom)</option>
+            <option value="3-1">1 April (New Zealand, India)</option>
+            <option value="6-1">1 July (Australia)</option>
+            <option value="0-1">1 January (calendar year, US, NL)</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </label>
+        <div class="field hidden" id="customTy">
+          <span>Custom start</span>
+          <div class="inline">
+            <input type="number" id="tyDay" min="1" max="31" inputmode="numeric" aria-label="Day">
+            <select id="tyMonth" aria-label="Month"></select>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section-h">Reading statements</h2>
+      <div class="card form">
+        <label class="field"><span>Date format</span>
+          <select id="dateOrder">
+            <option value="auto">Detect automatically</option>
+            <option value="DMY">Day / Month / Year</option>
+            <option value="MDY">Month / Day / Year</option>
+          </select>
+        </label>
+        <label class="field"><span>Currency symbol</span>
+          <input type="text" id="currency" maxlength="4" placeholder="e.g. R, $, £, €">
+        </label>
+      </div>
+
+      <h2 class="section-h">Install on iPhone</h2>
+      <div class="card text">
+        <ol>
+          <li>Open this page in <b>Safari</b>.</li>
+          <li>Tap the <b>Share</b> button (square with an arrow).</li>
+          <li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+        </ol>
+        <p class="muted">The app then opens full-screen from your Home Screen and works offline.</p>
+      </div>
+
+      <h2 class="section-h">Data</h2>
+      <div class="card form">
+        <button class="btn danger" id="clearAll">Delete all imported data</button>
+      </div>
+      <p class="privacy">Version <span id="ver"></span>. Totals are a helper for your tax return. Check them against your statements and the official tax certificate (e.g. IT3(b) or 1099-INT) from your bank.</p>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-view="statements" class="active"><span class="ti">📄</span><span>Statements</span></button>
+    <button data-view="summary"><span class="ti">📊</span><span>Summary</span></button>
+    <button data-view="txns"><span class="ti">☰</span><span>Transactions</span></button>
+    <button data-view="settings"><span class="ti">⚙︎</span><span>Settings</span></button>
+  </nav>
+
+  <div class="sheet-backdrop hidden" id="sheetBackdrop">
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+  </div>
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="parsers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

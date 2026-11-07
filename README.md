@@ -19,7 +19,7 @@ Interest is kept separate. It is **not** counted in "Money received" or "Money s
 - Monthly breakdown table and CSV export (summary and full transaction list) through the iPhone share sheet.
 - Tap any transaction to change its category, or mark it *Excluded* (for example a transfer between your own accounts).
 - Transactions the app could not read with certainty are flagged **Needs review**.
-- Tax-year presets: South Africa (1 Mar), UK (6 Apr), NZ/India (1 Apr), Australia (1 Jul), calendar year, or a custom start date.
+- Defaults to a calendar tax year (1 January – 31 December) and pounds (£). Other presets: South Africa (1 Mar), UK (6 Apr), NZ/India (1 Apr), Australia (1 Jul), or a custom start date. The currency symbol can be changed in Settings.
 - **Private.** Everything runs on the phone. Statements are never uploaded. Data is stored only in the app on your device.
 - Works offline once installed.
 

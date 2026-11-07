@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const VERSION = '1.2.0';
+  const VERSION = '1.3.0';
   const KEY = 'taxstatements.v1';
   const P = window.StatementParser;
   const CATS = P.CATS;
@@ -10,13 +10,21 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // ---------------- State ----------------
-  const defaults = { tyMonth: 2, tyDay: 1, dateOrder: 'auto', currency: '', ty: null };
+  // Default: calendar tax year (1 January – 31 December) and pounds sterling.
+  const defaults = { tyMonth: 0, tyDay: 1, dateOrder: 'auto', currency: '£', ty: null, v: 2 };
   let state = { settings: Object.assign({}, defaults), files: [], txns: {} };
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      state = { settings: Object.assign({}, defaults, s.settings), files: s.files || [], txns: s.txns || {} };
+      const old = s.settings || {};
+      // One-time update from v1 defaults (1 March, no currency symbol) to the new defaults.
+      if (!old.v) {
+        if (old.tyMonth === 2 && old.tyDay === 1) { old.tyMonth = 0; old.tyDay = 1; old.ty = null; }
+        if (!old.currency) old.currency = '£';
+        old.v = 2;
+      }
+      state = { settings: Object.assign({}, defaults, old), files: s.files || [], txns: s.txns || {} };
     }
   } catch (e) { /* storage unavailable: run in-memory */ }
 

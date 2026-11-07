@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when files change.
-const CACHE = 'taxstatements-v1.2.0';
+const CACHE = 'taxstatements-v1.3.0';
 const FILES = [
   './', 'index.html', 'styles.css', 'app.js', 'parsers.js', 'manifest.webmanifest',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',

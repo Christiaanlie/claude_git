@@ -1,10 +1,10 @@
 (function () {
   'use strict';
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const KEY = 'taxstatements.v1';
   const P = window.StatementParser;
   const CATS = P.CATS;
-  const CAT_ORDER = ['in', 'out', 'interestEarned', 'interestPaidOut', 'interestCharged', 'excluded'];
+  const CAT_ORDER = ['in', 'out', 'interestEarned', 'interestCharged', 'interestPaidOut', 'excluded'];
   const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -215,17 +215,23 @@
     $('intPaidOut').textContent = money(t.interestPaidOut);
     $('intCharged').textContent = money(t.interestCharged);
 
-    let note;
-    if (!t.n.interestEarned && !t.n.interestPaidOut && !t.n.interestCharged) note = 'No interest transactions found for this tax year.';
-    else {
-      const parts = [];
-      if (t.n.interestEarned) parts.push(`${t.n.interestEarned} interest credit(s)`);
-      if (t.n.interestPaidOut) parts.push(`interest was paid out ${t.n.interestPaidOut} time(s)`);
-      else if (t.n.interestEarned) parts.push('no interest was paid out of the account (it stayed in the balance)');
-      if (t.n.interestCharged) parts.push(`${t.n.interestCharged} interest charge(s)`);
-      note = parts.join(' · ') + '. Interest is kept out of "Money received" and "Money spent".';
-    }
-    $('intNote').textContent = note;
+    // Did the bank pay interest to you, and when?
+    const paid = list.filter((x) => catOf(x) === 'interestEarned');
+    const nPaid = paid.length;
+    $('intStatus').textContent = nPaid
+      ? `✓ Yes, the bank paid you interest ${nPaid === 1 ? 'once' : nPaid + ' times'}`
+      : '✗ No interest was paid to you';
+    $('intNote').textContent = nPaid
+      ? 'Total for this tax year. This amount is kept out of "Money received".'
+      : 'No interest payments were found in the statements for this tax year.';
+    const byM = {};
+    paid.forEach((x) => { const k = x.date.slice(0, 7); (byM[k] = byM[k] || []).push(x); });
+    $('intMonths').innerHTML = Object.keys(byM).sort().map((k) => {
+      const items = byM[k];
+      const sum = items.reduce((s, x) => s + Math.abs(x.amount), 0);
+      const sub = items.map((x) => `${fmtDate(x.date)} · ${esc(x.desc)}`).join('<br>');
+      return `<div class="row"><div><div class="row-t">${MONTH_NAMES[+k.slice(5) - 1]} ${k.slice(0, 4)}</div><div class="row-s">${sub}</div></div><div class="row-a pos">+${money(sum)}</div></div>`;
+    }).join('');
 
     const review = list.filter((x) => x.uncertain && !x.cat).length;
     const rb = $('reviewBanner');
@@ -238,17 +244,16 @@
       const y = sy + (S().tyMonth + i >= 12 ? 1 : 0);
       const k = `${y}-${pad(mi + 1)}`;
       const mt = totals(list.filter((x) => x.date.slice(0, 7) === k));
-      const intNet = mt.interestEarned - mt.interestCharged;
-      rows.push(`<tr><td>${MONTH_NAMES[mi]} ${String(y).slice(2)}</td><td class="pos">${nf.format(mt.in)}</td><td class="neg">${nf.format(mt.out)}</td><td>${mt.interestEarned || mt.interestCharged ? (intNet < 0 ? '−' : '') + nf.format(Math.abs(intNet)) : '–'}</td></tr>`);
+      rows.push(`<tr><td>${MONTH_NAMES[mi]} ${String(y).slice(2)}</td><td class="pos">${nf.format(mt.in)}</td><td class="neg">${nf.format(mt.out)}</td><td class="pos">${mt.interestEarned ? nf.format(mt.interestEarned) : '–'}</td></tr>`);
     }
-    rows.push(`<tr class="total"><td>Total</td><td class="pos">${nf.format(t.in)}</td><td class="neg">${nf.format(t.out)}</td><td>${(t.interestEarned - t.interestCharged < 0 ? '−' : '') + nf.format(Math.abs(t.interestEarned - t.interestCharged))}</td></tr>`);
+    rows.push(`<tr class="total"><td>Total</td><td class="pos">${nf.format(t.in)}</td><td class="neg">${nf.format(t.out)}</td><td class="pos">${nf.format(t.interestEarned)}</td></tr>`);
     $('monthRows').innerHTML = rows.join('');
   }
 
   function renderTxns() {
     const sy = currentTY();
     const all = txnsInTY(sy);
-    const chips = [['all', 'All'], ['in', 'Received'], ['out', 'Spent'], ['interestEarned', 'Interest earned'], ['interestPaidOut', 'Interest paid out'], ['interestCharged', 'Interest charged'], ['review', 'Needs review'], ['excluded', 'Excluded']];
+    const chips = [['all', 'All'], ['in', 'Received'], ['out', 'Spent'], ['interestEarned', 'Interest paid to you'], ['interestCharged', 'Interest charged'], ['interestPaidOut', 'Interest moved out'], ['review', 'Needs review'], ['excluded', 'Excluded']];
     const count = (k) => k === 'all' ? all.length : k === 'review' ? all.filter((t) => t.uncertain && !t.cat).length : all.filter((t) => catOf(t) === k).length;
     $('chips').innerHTML = chips.map(([k, l]) => `<button class="chip ${filter === k ? 'active' : ''}" data-filter="${k}">${l} ${count(k)}</button>`).join('');
     const q = query.toLowerCase();
@@ -336,13 +341,13 @@
     const rows = [[tyLabel(sy), tyRangeText(sy)], [], ['Category', 'Total', 'Transactions']];
     CAT_ORDER.forEach((c) => rows.push([CATS[c], t[c].toFixed(2), t.n[c] || 0]));
     rows.push(['Net (received - spent)', (t.in - t.out).toFixed(2), '']);
-    rows.push([], ['Month', 'Received', 'Spent', 'Interest earned', 'Interest paid out', 'Interest charged']);
+    rows.push([], ['Month', 'Received', 'Spent', 'Interest paid to you', 'Interest charged', 'Interest moved out']);
     for (let i = 0; i < 12; i++) {
       const mi = (S().tyMonth + i) % 12;
       const y = sy + (S().tyMonth + i >= 12 ? 1 : 0);
       const k = `${y}-${pad(mi + 1)}`;
       const m = totals(list.filter((x) => x.date.slice(0, 7) === k));
-      rows.push([`${MONTH_NAMES[mi]} ${y}`, m.in.toFixed(2), m.out.toFixed(2), m.interestEarned.toFixed(2), m.interestPaidOut.toFixed(2), m.interestCharged.toFixed(2)]);
+      rows.push([`${MONTH_NAMES[mi]} ${y}`, m.in.toFixed(2), m.out.toFixed(2), m.interestEarned.toFixed(2), m.interestCharged.toFixed(2), m.interestPaidOut.toFixed(2)]);
     }
     rows.push([], ['Interest transactions']);
     rows.push(['Date', 'Description', 'Amount', 'Category']);

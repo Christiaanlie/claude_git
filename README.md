@@ -4,9 +4,9 @@ Add your 12 monthly bank statements and the app shows you, for the tax year:
 
 - **Money received**: everything that came into the account
 - **Money spent**: everything that went out
-- **Interest earned**: interest the bank credited to you
-- **Interest paid out**: earned interest that was transferred out of the account (for example to a linked account)
+- **Interest paid to you**: whether the bank paid you interest (yes or no), the total, and the months it was paid
 - **Interest charged**: interest you paid the bank (overdraft, loan)
+- **Interest moved out**: interest you transferred to another account, so it isn't counted as spending
 
 Interest is kept separate. It is **not** counted in "Money received" or "Money spent".
 
@@ -61,8 +61,8 @@ Banks lay out statements differently, so for each transaction the app uses the f
 5. Words in the description (salary, deposit, refund…). Transactions decided this way are flagged for review.
 
 Interest is detected from words like *interest*, *int pd*, *credit interest* and *rente* (Afrikaans/Dutch).
-- Interest coming **in** is classed as **interest earned**.
-- Interest going **out** that mentions a payout or transfer is classed as **interest paid out**.
+- Interest coming **in** is classed as **interest paid to you**.
+- Interest going **out** that mentions a payout or transfer is classed as **interest moved out**.
 - Any other interest going **out** (overdraft, loan, debit interest) is classed as **interest charged**.
 
 ## Project layout

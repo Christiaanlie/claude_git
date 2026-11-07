@@ -101,6 +101,12 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 16px 24px; }
 .tile.in .tile-v { color: var(--in); }
 .tile.out .tile-v { color: var(--out); }
 .card.net { display: flex; justify-content: space-between; padding: 12px 16px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.interest-hero { padding: 14px 16px; cursor: pointer; }
+.ih-status { font-weight: 700; font-size: 17px; }
+.ih-amount { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.ih-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.int-months { margin-top: 10px; }
+.int-months:empty { display: none; }
 .interest-note { font-size: 13px; color: var(--muted); margin: 8px 4px; }
 .review-banner { background: var(--warn-bg); color: var(--warn); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; cursor: pointer; }
 

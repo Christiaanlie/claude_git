@@ -122,8 +122,8 @@
   const CATS = {
     in: 'Money received',
     out: 'Money spent',
-    interestEarned: 'Interest earned',
-    interestPaidOut: 'Interest paid out',
+    interestEarned: 'Interest paid to you',
+    interestPaidOut: 'Interest moved out',
     interestCharged: 'Interest charged',
     excluded: 'Excluded'
   };

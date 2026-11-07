@@ -56,18 +56,24 @@
       </div>
       <div class="card net"><span>Net (received − spent)</span><strong id="sumNet">0</strong></div>
 
-      <h2 class="section-h">Interest</h2>
-      <div class="card list">
-        <div class="row" data-goto="interestEarned"><div><div class="row-t">Interest earned</div><div class="row-s">Interest the bank credited to you</div></div><div class="row-a pos" id="intEarned">0</div></div>
-        <div class="row" data-goto="interestPaidOut"><div><div class="row-t">Interest paid out</div><div class="row-s">Interest moved out of this account to you</div></div><div class="row-a" id="intPaidOut">0</div></div>
-        <div class="row" data-goto="interestCharged"><div><div class="row-t">Interest charged</div><div class="row-s">Interest you paid the bank (overdraft, loan)</div></div><div class="row-a neg" id="intCharged">0</div></div>
+      <h2 class="section-h">Interest the bank paid you</h2>
+      <div class="card interest-hero" data-goto="interestEarned">
+        <div class="ih-status" id="intStatus">–</div>
+        <div class="ih-amount pos" id="intEarned">0</div>
+        <div class="ih-sub" id="intNote"></div>
       </div>
-      <div class="interest-note" id="intNote"></div>
+      <div class="card list int-months" id="intMonths"></div>
+
+      <h2 class="section-h">Other interest</h2>
+      <div class="card list">
+        <div class="row" data-goto="interestCharged"><div><div class="row-t">Interest charged</div><div class="row-s">Interest you paid the bank (overdraft, loan)</div></div><div class="row-a neg" id="intCharged">0</div></div>
+        <div class="row" data-goto="interestPaidOut"><div><div class="row-t">Interest moved out</div><div class="row-s">Interest you transferred to another account. Not counted as spending.</div></div><div class="row-a" id="intPaidOut">0</div></div>
+      </div>
 
       <h2 class="section-h">By month</h2>
       <div class="card table-wrap">
         <table class="mtable">
-          <thead><tr><th>Month</th><th>Received</th><th>Spent</th><th>Interest</th></tr></thead>
+          <thead><tr><th>Month</th><th>Received</th><th>Spent</th><th>Interest paid</th></tr></thead>
           <tbody id="monthRows"></tbody>
         </table>
       </div>

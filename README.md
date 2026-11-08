@@ -81,3 +81,15 @@ docs/                 the app (served by GitHub Pages)
 
 The totals help you prepare your tax return. Always check them against your statements and your bank's official
 interest certificate (for example IT3(b) in South Africa).
+
+## Testing with real statements
+
+`tests/check-statements.js` checks the parser against real statements. Put PDFs in `tests/private/`. That folder is
+git-ignored, so statements are never committed. Then run:
+
+```
+node tests/check-statements.js path/to/pdfjs-dist
+```
+
+For each statement it compares the parsed money in and money out with the totals the bank prints on page 1. It also
+checks that no transaction is left uncertain. Run it before every change to the parser.

@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const VERSION = '1.4.0';
+  const VERSION = '1.4.1';
   const KEY = 'taxstatements.v1';
   const P = window.StatementParser;
   const CATS = P.CATS;

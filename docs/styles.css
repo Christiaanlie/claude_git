@@ -120,8 +120,8 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 16px 24px; }
 .mtable td.flow { color: var(--accent); }
 /* Six columns must fit an iPhone screen without sideways scrolling */
 @media (max-width: 520px) {
-  .mtable { font-size: 11.5px; letter-spacing: -0.2px; }
-  .mtable th, .mtable td { padding: 7px 3px; }
+  .mtable { font-size: 11px; letter-spacing: -0.3px; }
+  .mtable th, .mtable td { padding: 7px 2px; }
   .mtable th:first-child, .mtable td:first-child { padding-left: 8px; }
   .mtable th:last-child, .mtable td:last-child { padding-right: 8px; }
   .mtable th { font-size: 10.5px; white-space: normal; vertical-align: bottom; }

@@ -1,0 +1,3 @@
+# Real bank statements used for local testing. Never commit these.
+tests/private/
+node_modules/

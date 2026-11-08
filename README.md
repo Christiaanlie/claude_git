@@ -7,6 +7,7 @@ Add your 12 monthly bank statements and the app shows you, for the tax year:
 - **Interest paid to you**: whether the bank paid you interest (yes or no), the total, and the months it was paid
 - **Interest charged**: interest you paid the bank (overdraft, loan)
 - **Interest moved out**: interest you transferred to another account, so it isn't counted as spending
+- **F/Flow Platform SE**: two extra columns in the monthly table. The first is money received from F/Flow Platform SE that month. The second is **20%** of that amount. Any money-in line whose description contains "F/Flow" counts; capitals, spaces and punctuation are ignored. Lloyds shortens descriptions, so the full name may show as, for example, "F/FLOW TOPSOURCE W". You can change the match text in Settings.
 
 Interest is kept separate. It is **not** counted in "Money received" or "Money spent".
 

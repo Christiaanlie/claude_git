@@ -73,7 +73,7 @@
       <h2 class="section-h">By month</h2>
       <div class="card table-wrap">
         <table class="mtable">
-          <thead><tr><th>Month</th><th>Received</th><th>Spent</th><th>Interest paid</th></tr></thead>
+          <thead><tr><th>Month</th><th>Received</th><th>Spent</th><th>Interest paid</th><th>F/Flow</th><th>20%</th></tr></thead>
           <tbody id="monthRows"></tbody>
         </table>
       </div>
@@ -128,6 +128,14 @@
           <input type="text" id="currency" maxlength="4" placeholder="e.g. £, $, €, R">
         </label>
       </div>
+
+      <h2 class="section-h">F/Flow column</h2>
+      <div class="card form">
+        <label class="field"><span>Count money in when the description contains</span>
+          <input type="text" id="flowMatch" placeholder="F/Flow" autocapitalize="off" autocorrect="off">
+        </label>
+      </div>
+      <p class="privacy">Feeds the "F/Flow" and "20%" columns in the monthly summary. Capitals, spaces and punctuation are ignored. Lloyds shortens descriptions, so "F/Flow Platform SE" appears as e.g. "F/FLOW TOPSOURCE W".</p>
 
       <h2 class="section-h">Install on iPhone</h2>
       <div class="card text">

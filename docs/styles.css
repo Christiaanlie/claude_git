@@ -116,6 +116,17 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 16px 24px; }
 .mtable th:first-child, .mtable td:first-child { text-align: left; }
 .mtable th { font-size: 12px; color: var(--muted); font-weight: 600; }
 .mtable tr:last-child td { border-bottom: 0; }
+.mtable th:first-child, .mtable td:first-child { position: sticky; left: 0; background: var(--card); }
+.mtable td.flow { color: var(--accent); }
+/* Six columns must fit an iPhone screen without sideways scrolling */
+@media (max-width: 520px) {
+  .mtable { font-size: 11.5px; letter-spacing: -0.2px; }
+  .mtable th, .mtable td { padding: 7px 3px; }
+  .mtable th:first-child, .mtable td:first-child { padding-left: 8px; }
+  .mtable th:last-child, .mtable td:last-child { padding-right: 8px; }
+  .mtable th { font-size: 10.5px; white-space: normal; vertical-align: bottom; }
+}
+.tag.flow { background: var(--accent-soft); color: var(--accent); }
 .mtable tfoot td, .mtable tr.total td { font-weight: 700; }
 
 .actions { display: grid; gap: 10px; margin-top: 18px; }

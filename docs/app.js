@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const VERSION = '1.3.0';
+  const VERSION = '1.4.0';
   const KEY = 'taxstatements.v1';
   const P = window.StatementParser;
   const CATS = P.CATS;
@@ -11,7 +11,7 @@
 
   // ---------------- State ----------------
   // Default: calendar tax year (1 January – 31 December) and pounds sterling.
-  const defaults = { tyMonth: 0, tyDay: 1, dateOrder: 'auto', currency: '£', ty: null, v: 2 };
+  const defaults = { tyMonth: 0, tyDay: 1, dateOrder: 'auto', currency: '£', ty: null, v: 2, flowMatch: 'F/Flow' };
   let state = { settings: Object.assign({}, defaults), files: [], txns: {} };
   try {
     const raw = localStorage.getItem(KEY);
@@ -82,6 +82,16 @@
 
   const catOf = (t) => t.cat || P.classify(t);
 
+  // F/Flow Platform SE: money in whose description contains the match text (default "F/Flow").
+  // Compared without spaces/punctuation, so "F/Flow Platform SE" and Lloyds' shortened
+  // "F/FLOW TOPSOURCE W" both match.
+  const FLOW_PCT = 0.20;
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const isFlow = (t) => {
+    const m = norm(S().flowMatch);
+    return !!m && catOf(t) === 'in' && norm(t.desc).includes(m);
+  };
+
   function txnsInTY(sy) {
     const b = tyBounds(sy);
     return Object.entries(state.txns)
@@ -91,12 +101,14 @@
   }
 
   function totals(list) {
-    const r = { in: 0, out: 0, interestEarned: 0, interestPaidOut: 0, interestCharged: 0, excluded: 0, n: {} };
+    const r = { in: 0, out: 0, interestEarned: 0, interestPaidOut: 0, interestCharged: 0, excluded: 0, flow: 0, n: {} };
     for (const t of list) {
       const c = catOf(t);
       r[c] += Math.abs(t.amount);
       r.n[c] = (r.n[c] || 0) + 1;
+      if (isFlow(t)) { r.flow += Math.abs(t.amount); r.n.flow = (r.n.flow || 0) + 1; }
     }
+    r.flowPct = Math.round(r.flow * FLOW_PCT * 100) / 100;
     return r;
   }
 
@@ -252,20 +264,20 @@
       const y = sy + (S().tyMonth + i >= 12 ? 1 : 0);
       const k = `${y}-${pad(mi + 1)}`;
       const mt = totals(list.filter((x) => x.date.slice(0, 7) === k));
-      rows.push(`<tr><td>${MONTH_NAMES[mi]} ${String(y).slice(2)}</td><td class="pos">${nf.format(mt.in)}</td><td class="neg">${nf.format(mt.out)}</td><td class="pos">${mt.interestEarned ? nf.format(mt.interestEarned) : '–'}</td></tr>`);
+      rows.push(`<tr><td>${MONTH_NAMES[mi]} ${String(y).slice(2)}</td><td class="pos">${nf.format(mt.in)}</td><td class="neg">${nf.format(mt.out)}</td><td class="pos">${mt.interestEarned ? nf.format(mt.interestEarned) : '–'}</td><td class="flow">${mt.flow ? nf.format(mt.flow) : '–'}</td><td class="flow">${mt.flow ? nf.format(mt.flowPct) : '–'}</td></tr>`);
     }
-    rows.push(`<tr class="total"><td>Total</td><td class="pos">${nf.format(t.in)}</td><td class="neg">${nf.format(t.out)}</td><td class="pos">${nf.format(t.interestEarned)}</td></tr>`);
+    rows.push(`<tr class="total"><td>Total</td><td class="pos">${nf.format(t.in)}</td><td class="neg">${nf.format(t.out)}</td><td class="pos">${nf.format(t.interestEarned)}</td><td class="flow">${nf.format(t.flow)}</td><td class="flow">${nf.format(t.flowPct)}</td></tr>`);
     $('monthRows').innerHTML = rows.join('');
   }
 
   function renderTxns() {
     const sy = currentTY();
     const all = txnsInTY(sy);
-    const chips = [['all', 'All'], ['in', 'Received'], ['out', 'Spent'], ['interestEarned', 'Interest paid to you'], ['interestCharged', 'Interest charged'], ['interestPaidOut', 'Interest moved out'], ['review', 'Needs review'], ['excluded', 'Excluded']];
-    const count = (k) => k === 'all' ? all.length : k === 'review' ? all.filter((t) => t.uncertain && !t.cat).length : all.filter((t) => catOf(t) === k).length;
+    const chips = [['all', 'All'], ['in', 'Received'], ['out', 'Spent'], ['interestEarned', 'Interest paid to you'], ['interestCharged', 'Interest charged'], ['interestPaidOut', 'Interest moved out'], ['flow', 'F/Flow'], ['review', 'Needs review'], ['excluded', 'Excluded']];
+    const count = (k) => k === 'all' ? all.length : k === 'flow' ? all.filter(isFlow).length : k === 'review' ? all.filter((t) => t.uncertain && !t.cat).length : all.filter((t) => catOf(t) === k).length;
     $('chips').innerHTML = chips.map(([k, l]) => `<button class="chip ${filter === k ? 'active' : ''}" data-filter="${k}">${l} ${count(k)}</button>`).join('');
     const q = query.toLowerCase();
-    const list = all.filter((t) => (filter === 'all' || (filter === 'review' ? t.uncertain && !t.cat : catOf(t) === filter)) && (!q || t.desc.toLowerCase().includes(q)));
+    const list = all.filter((t) => (filter === 'all' || (filter === 'flow' ? isFlow(t) : filter === 'review' ? t.uncertain && !t.cat : catOf(t) === filter)) && (!q || t.desc.toLowerCase().includes(q)));
     if (!list.length) { $('txnList').innerHTML = '<div class="card"><div class="empty">No transactions here.</div></div>'; return; }
     const groups = {};
     list.forEach((t) => { (groups[t.date.slice(0, 7)] = groups[t.date.slice(0, 7)] || []).push(t); });
@@ -277,7 +289,7 @@
           const c = catOf(t);
           const cls = c === 'in' || c === 'interestEarned' ? 'pos' : c === 'excluded' ? 'muted' : 'neg';
           const tags = (c.startsWith('interest') ? `<span class="tag int">${CATS[c]}</span>` : c === 'excluded' ? '<span class="tag">Excluded</span>' : '')
-            + (t.uncertain && !t.cat ? '<span class="tag warn">check</span>' : '') + (t.cat ? '<span class="tag">edited</span>' : '');
+            + (isFlow(t) ? '<span class="tag flow">F/Flow</span>' : '') + (t.uncertain && !t.cat ? '<span class="tag warn">check</span>' : '') + (t.cat ? '<span class="tag">edited</span>' : '');
           return `<div class="row tap" data-txn="${esc(t.id)}"><div><div class="row-t">${esc(t.desc)}</div><div class="row-s">${tags}${fmtDate(t.date)}</div></div><div class="row-a ${cls}">${c === 'in' || c === 'interestEarned' ? '+' : c === 'excluded' ? '' : '−'}${money(Math.abs(t.amount)).replace('−', '')}</div></div>`;
         }).join('')}</div>`;
     }).join('');
@@ -293,6 +305,7 @@
     $('tyMonth').value = S().tyMonth;
     $('dateOrder').value = S().dateOrder;
     $('currency').value = S().currency;
+    $('flowMatch').value = S().flowMatch;
     $('ver').textContent = VERSION;
   }
 
@@ -349,13 +362,15 @@
     const rows = [[tyLabel(sy), tyRangeText(sy)], [], ['Category', 'Total', 'Transactions']];
     CAT_ORDER.forEach((c) => rows.push([CATS[c], t[c].toFixed(2), t.n[c] || 0]));
     rows.push(['Net (received - spent)', (t.in - t.out).toFixed(2), '']);
-    rows.push([], ['Month', 'Received', 'Spent', 'Interest paid to you', 'Interest charged', 'Interest moved out']);
+    rows.push(['From F/Flow Platform SE (in Money received)', t.flow.toFixed(2), t.n.flow || 0]);
+    rows.push(['20% of F/Flow Platform SE', t.flowPct.toFixed(2), '']);
+    rows.push([], ['Month', 'Received', 'Spent', 'Interest paid to you', 'Interest charged', 'Interest moved out', 'From F/Flow Platform SE', '20% of F/Flow']);
     for (let i = 0; i < 12; i++) {
       const mi = (S().tyMonth + i) % 12;
       const y = sy + (S().tyMonth + i >= 12 ? 1 : 0);
       const k = `${y}-${pad(mi + 1)}`;
       const m = totals(list.filter((x) => x.date.slice(0, 7) === k));
-      rows.push([`${MONTH_NAMES[mi]} ${y}`, m.in.toFixed(2), m.out.toFixed(2), m.interestEarned.toFixed(2), m.interestCharged.toFixed(2), m.interestPaidOut.toFixed(2)]);
+      rows.push([`${MONTH_NAMES[mi]} ${y}`, m.in.toFixed(2), m.out.toFixed(2), m.interestEarned.toFixed(2), m.interestCharged.toFixed(2), m.interestPaidOut.toFixed(2), m.flow.toFixed(2), m.flowPct.toFixed(2)]);
     }
     rows.push([], ['Interest transactions']);
     rows.push(['Date', 'Description', 'Amount', 'Category']);
@@ -430,6 +445,7 @@
   $('tyDay').addEventListener('change', customChange);
   $('tyMonth').addEventListener('change', customChange);
   $('dateOrder').addEventListener('change', (e) => { S().dateOrder = e.target.value; save(); toast('Applies to statements you import from now on.'); });
+  $('flowMatch').addEventListener('input', (e) => { S().flowMatch = e.target.value; save(); renderSummary(); renderTxns(); });
   $('currency').addEventListener('input', (e) => { S().currency = e.target.value.trim(); save(); renderSummary(); renderTxns(); });
   $('clearAll').addEventListener('click', () => {
     if (!confirm('Delete all imported statements and transactions from this iPhone?')) return;
